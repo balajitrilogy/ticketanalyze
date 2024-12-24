@@ -90,8 +90,16 @@ def main():
         selected_month = st.sidebar.selectbox("Select Month (Optional)", ['All'] + list(months))
         selected_month = None if selected_month == 'All' else selected_month
         
+        # Ticket Classification filter
+        ticket_types = ['All', 'CS', 'BU']
+        selected_ticket_type = st.sidebar.selectbox("Select Ticket Classification", ticket_types)
+        
         # Analyze data
         results = analyze_tickets(df, selected_product, selected_week, selected_month)
+        
+        # Apply Ticket Classification filter
+        if selected_ticket_type != 'All':
+            results['filtered_data'] = results['filtered_data'][results['filtered_data']['Ticket Type'] == selected_ticket_type]
         
         # Display metrics
         col1, col2, col3 = st.columns(3)
