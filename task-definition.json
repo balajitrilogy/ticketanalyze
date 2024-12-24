@@ -1,0 +1,29 @@
+{
+    "family": "skyvera-ticket-analysis",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512",
+    "executionRoleArn": "arn:aws:iam::899084202472:role/ecsTaskExecutionRole-csai-skyvera",
+    "containerDefinitions": [
+        {
+            "name": "skyvera-ticket-analysis",
+            "image": "899084202472.dkr.ecr.us-east-1.amazonaws.com/csai-skyvera-ticket-analysis:latest",
+            "portMappings": [
+                {
+                    "containerPort": 8501,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/skyvera-ticket-analysis",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ]
+} 
