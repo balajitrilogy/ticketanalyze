@@ -27,10 +27,10 @@ def load_data(uploaded_file):
     
     return df
 
-def analyze_tickets(df, selected_product, selected_week=None, selected_month=None):
+def analyze_tickets(df, selected_products, selected_week=None, selected_month=None):
     """Analyze ticket distribution between CS and BU."""
-    # Filter by product
-    filtered_df = df[df['Product'] == selected_product]
+    # Filter by products
+    filtered_df = df[df['Product'].isin(selected_products)]
     
     # Apply week filter if selected
     if selected_week:
@@ -76,10 +76,19 @@ def main():
         # Sidebar filters
         st.sidebar.header("Filters")
         
-        # Product filter
+        # Product filter - changed to multiselect
         products = sorted(df['Product'].unique())
-        selected_product = st.sidebar.selectbox("Select Product", products)
+        selected_products = st.sidebar.multiselect(
+            "Select Products",
+            products,
+            default=[products[0]] if products else []  # Select first product by default
+        )
         
+        # Only proceed if at least one product is selected
+        if not selected_products:
+            st.warning("Please select at least one product to analyze.")
+            return
+            
         # Week filter
         weeks = sorted(df['Week Closed'].unique())
         selected_week = st.sidebar.selectbox("Select Week (Optional)", ['All'] + list(weeks))
@@ -94,8 +103,8 @@ def main():
         ticket_types = ['All', 'CS', 'BU']
         selected_ticket_type = st.sidebar.selectbox("Select Ticket Classification", ticket_types)
         
-        # Analyze data
-        results = analyze_tickets(df, selected_product, selected_week, selected_month)
+        # Analyze data with multiple products
+        results = analyze_tickets(df, selected_products, selected_week, selected_month)
         
         # Apply Ticket Classification filter
         if selected_ticket_type != 'All':
@@ -112,22 +121,23 @@ def main():
         fig_pie = px.pie(
             values=[results['CS Tickets'], results['BU Tickets']],
             names=['CS', 'BU'],
-            title=f"CS vs BU Distribution for {selected_product}",
+            title=f"CS vs BU Distribution for {', '.join(selected_products)}",
             color_discrete_sequence=['#00CC96', '#EF553B']
         )
         st.plotly_chart(fig_pie)
         
-        # Display trend over time if week/month selected
+        # Display trend over time with product breakdown
         if results['filtered_data'].shape[0] > 0:
             st.subheader("Ticket Distribution Over Time")
-            time_series = results['filtered_data'].groupby(['Week Closed', 'Ticket Type']).size().reset_index(name='Count')
+            time_series = results['filtered_data'].groupby(['Week Closed', 'Product', 'Ticket Type']).size().reset_index(name='Count')
             fig_line = px.line(
                 time_series,
                 x='Week Closed',
                 y='Count',
-                color='Ticket Type',
-                title=f"Ticket Distribution Trend for {selected_product}",
-                color_discrete_map={'CS': '#00CC96', 'BU': '#EF553B'}
+                color='Product',
+                line_dash='Ticket Type',  # Use different line styles for CS vs BU
+                title=f"Ticket Distribution Trend by Product",
+                color_discrete_sequence=px.colors.qualitative.Set3  # More colors for multiple products
             )
             st.plotly_chart(fig_line)
         
@@ -140,7 +150,7 @@ def main():
         st.download_button(
             label="Download Filtered Data",
             data=csv,
-            file_name=f"ticket_analysis_{selected_product}.csv",
+            file_name=f"ticket_analysis_{', '.join(selected_products)}.csv",
             mime="text/csv"
         )
 
