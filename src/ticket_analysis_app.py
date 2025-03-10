@@ -27,6 +27,11 @@ def load_data(uploaded_file):
     
     return df
 
+def is_bu_ticket(group_name):
+    """Helper function to determine if a ticket is BU based on group name."""
+    bu_groups = ['ZD - BU Routing', 'BU Routing']
+    return any(group in str(group_name) for group in bu_groups)
+
 def analyze_tickets(df, selected_products, selected_week=None, selected_month=None):
     """Analyze ticket distribution between CS and BU."""
     # Filter by products
@@ -41,8 +46,8 @@ def analyze_tickets(df, selected_products, selected_week=None, selected_month=No
         filtered_df = filtered_df[filtered_df['Month'] == selected_month]
     
     # Calculate CS vs BU distribution based on ZD Group Name
-    bu_tickets = filtered_df[filtered_df['ZD Group Name'] == 'ZD - BU Routing'].shape[0]
-    cs_tickets = filtered_df[filtered_df['ZD Group Name'] != 'ZD - BU Routing'].shape[0]
+    bu_tickets = filtered_df[filtered_df['ZD Group Name'].apply(is_bu_ticket)].shape[0]
+    cs_tickets = filtered_df[~filtered_df['ZD Group Name'].apply(is_bu_ticket)].shape[0]
     
     # Calculate total and percentages
     total_tickets = cs_tickets + bu_tickets
@@ -51,7 +56,7 @@ def analyze_tickets(df, selected_products, selected_week=None, selected_month=No
     
     # Add a new column to identify ticket type
     filtered_df['Ticket Type'] = filtered_df['ZD Group Name'].apply(
-        lambda x: 'BU' if x == 'ZD - BU Routing' else 'CS'
+        lambda x: 'BU' if is_bu_ticket(x) else 'CS'
     )
     
     return {
